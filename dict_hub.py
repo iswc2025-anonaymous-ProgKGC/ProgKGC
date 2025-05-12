@@ -16,7 +16,6 @@ entity_dict: EntityDict = None
 tokenizer: AutoTokenizer = None
 
 cotail_graph :CoTailGraph=None
-# ********************************新增代码******************************
 dynamic_cache :DynamicCache = None
 
 
@@ -28,7 +27,7 @@ def _init_dynamic_cache():
 def get_dynamic_cache():
     _init_dynamic_cache()
     return dynamic_cache
-# ********************************新增代码******************************
+
 
 def _init_cotail_graph_valid():
     global cotail_graph

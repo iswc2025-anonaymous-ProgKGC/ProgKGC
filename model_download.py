@@ -131,14 +131,14 @@ def _download_file_resumable(url, save_path, i, j, chunk_size=1024*1024):
     headers = {}
     r = requests.get(url, headers=headers, stream=True, timeout=(20, 60))
     if r.status_code == 403:
-        _log(url, "download", '下载资源发生了错误，请使用正确的token')
+        _log(url, "download", 'An error occurred while downloading the resource. Please use the correct token.')
         return False
     bar_format = '{desc}{percentage:3.0f}%|{bar}|{n_fmt}M/{total_fmt}M [{elapsed}<{remaining}, {rate_fmt}]'
     _desc = str(i) + ' of ' + str(j) + '(' + save_path.split('/')[-1] + ')'
     if r.headers.get('content-length') is not None :
         total_length = int(r.headers.get('content-length'))
     else:
-        _log(url, "download", 'url不正确')
+        _log(url, "download", 'wrong url')
         return False
     if os.path.exists(save_path):
         temp_size = os.path.getsize(save_path)
@@ -186,7 +186,7 @@ def _download_model_from_mirror(_repo_id, _repo_type, _token, _e):
         if file['name'] == '~incomplete.txt':
             _log(_repo_id, "mirror", 'downloading')
             return False
-    _log(_repo_id, "download", '开始从aliendao.cn下载文件')
+    _log(_repo_id, "download", 'Starting to download files from aliendao.cn.')
     files = _fetchFileList(files)
     i = 1
     for file in files:
@@ -208,7 +208,7 @@ def download_model_from_mirror(_repo_id, _repo_type, _token, _e):
         return
     else:
         #return download_model_retry(_repo_id, _repo_type)
-        _log(_repo_id, "download", '下载资源发生了错误，请使用正确的token')
+        _log(_repo_id, "download", 'An error occurred while downloading the resource. Please use a valid token.')
 
 
 if __name__ == '__main__':
@@ -216,12 +216,9 @@ if __name__ == '__main__':
     parser.add_argument('--repo_id', default=None, type=str, required=True)
     parser.add_argument('--repo_type', default="model",
                         type=str, required=False)  # models,dataset
-    # --mirror为从aliendao.cn镜像下载，如果aliendao.cn没有镜像，则会转到hf
-    # 默认为True
     parser.add_argument('--mirror', action='store_true',
                         default=True, required=False)
     parser.add_argument('--token', default="", type=str, required=False)
-    # --e为企业付费版
     parser.add_argument('--e', action='store_true',
                         default=False, required=False)
     args = parser.parse_args()

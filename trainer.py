@@ -7,9 +7,7 @@ import torch.nn as nn
 import torch.utils.data
 
 from typing import Dict
-import os
 
-os.environ['HF_ENDPOINT'] = 'https://hf-mirror.com'
 from transformers import get_linear_schedule_with_warmup, get_cosine_schedule_with_warmup
 from transformers import AdamW
 from doc import Dataset, collate
@@ -154,19 +152,18 @@ class Trainer:
             else:
                 outputs = self.model(**batch_dict, use_gnn=(epoch >= 20))
 
-            # ********************************新增代码******************************
-            # 提取实体ID和向量
+
             batch_data = batch_dict['batch_data']
             head_ids = [ex.head_id for ex in batch_data]
             tail_ids = [ex.tail_id for ex in batch_data]
             hr_vectors = outputs['hr_vector']
             tail_vectors = outputs['tail_vector']
 
-            # 更新缓存
+
             cache = get_dynamic_cache()
             cache.update_hr(head_ids, hr_vectors)
             cache.update_tail(tail_ids, tail_vectors)
-            # ********************************新增代码******************************
+
             outputs = get_model_obj(self.model).compute_logits(output_dict=outputs, batch_dict=batch_dict)
             outputs = ModelOutput(**outputs)
             logits, labels = outputs.logits, outputs.labels

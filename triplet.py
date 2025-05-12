@@ -12,47 +12,7 @@ from collections import defaultdict
 import collections
 
 
-# deepseek_url = "https://api.deepseek.com/v1"
-# deepseek_api = "sk-13670473d25a4dcf8e3c7ed8a557a67a"
-# deepseek_model = "deepseek-chat"
 
-# class OpenAIInterface:
-#     def __init__(self):
-#         self.client = OpenAI(api_key=deepseek_api,
-#                              base_url=deepseek_url)
-
-#     def predict_text_logged(self, prompt, temp=1):
-#         """
-#         Queries OpenAI's GPT-3 model given the prompt and returns the prediction.
-#         """
-#         n_prompt_tokens = 0
-#         n_completion_tokens = 0
-#         start_query = time.perf_counter()
-#         content = "-1"
-
-#         message = [{"role": "user", "content": prompt}]
-#         response = self.client.chat.completions.create(
-#             model=deepseek_model, messages=message, temperature=temp
-#         )
-#         n_prompt_tokens = response.usage.prompt_tokens
-#         n_completion_tokens = response.usage.completion_tokens
-#         # end_query = time.perf_counter()
-#         print(f"response.choices[0]:{response.choices[0]}")
-#         content = response.choices[0].message.content
-#         print(f"content:{content}")
-#         end_query = time.perf_counter()
-
-#         response_time = end_query - start_query
-#         return {
-#             "prompt": prompt,
-#             "content": content,
-#             "n_prompt_tokens": n_prompt_tokens,
-#             "n_completion_tokens": n_completion_tokens,
-#             "response_time": response_time,
-#         }
-
-
-# openai_interface = OpenAIInterface()
 
 @dataclass
 class EntityExample:
@@ -121,18 +81,16 @@ class EntityDict:
         return len(self.entity_exs)
 
 
-# ********************************新增代码******************************
-# 预处理阶段构建共尾实体图
+
 class CoTailGraph_real:
     def __init__(self, train_path):
-        # 存储每个尾实体对应的所有头实体
+
         triples = json.load(open(train_path, 'r', encoding='utf-8'))
         self.tail_to_heads = defaultdict(set)
         for tri in triples:
             h, t = tri['head_id'], tri['tail_id']
             self.tail_to_heads[t].add(h)
 
-        # 构建邻接表：头实体 -> 共尾的其他头实体
         self.adjacency = defaultdict(set)
         for t, heads in self.tail_to_heads.items():
             for h1 in heads:
@@ -141,20 +99,19 @@ class CoTailGraph_real:
                         self.adjacency[h1].add(h2)
 
     def get_cotail_neighbors(self, head_id):
-        """获取与head_id共享尾实体的其他头实体"""
+
         return list(self.adjacency.get(head_id, set()))
 
 
 class CoTailGraph:
     def __init__(self, train_path):
-        # 加载训练集中的三元组
+
         triples = json.load(open(train_path, 'r', encoding='utf-8'))
 
-        # 构建邻接表：实体 -> 直接相连的一阶邻居实体
         self.adjacency = defaultdict(set)
         for tri in triples:
             h, t = tri['head_id'], tri['tail_id']
-            # 添加双向邻居关系（无向图）
+
             self.adjacency[h].add(t)
             self.adjacency[t].add(h)
 
@@ -206,7 +163,7 @@ class DynamicCache:
         vectors = []
         for key in keys:
             if key in self.tail_cache:
-                # 标记为最近使用并获取值
+
                 self.tail_cache.move_to_end(key)
                 vectors.append(self.tail_cache[key])
             else:
@@ -214,7 +171,6 @@ class DynamicCache:
         return vectors
 
 
-# ********************************新增代码******************************
 
 class LinkGraph:
 
@@ -271,27 +227,3 @@ def reverse_triplet(obj):
         'tail': obj['head']
     }
 
-# def reverse_triplet(obj, openai_interface: OpenAIInterface):
-#     """
-#     Generate the inverse relation using a language model.
-#     """
-#     head = obj['head']
-#     relation = obj['relation']
-#     tail = obj['tail']
-
-#     # Construct a prompt to get the inverse relation
-#     prompt = f"Given the following relationship: Head: '{head}', Tail: '{tail}', Relation: '{relation}', generate the inverse by swapping 'head' and 'tail' and reversing 'relation'.\n\n For Example: Head: 'Inception', Tail: 'Christopher Nolan', Relation: 'directed by' => Inverse: 'directs'. Please provide only the inverse relation without any additional explanation or entity details."
-
-#     # Call the language model to predict the inverse relation
-#     response = openai_interface.predict_text_logged(prompt)
-
-#     # Extract the inverse relation from the model's response
-#     inverse_relation = response['content'].strip().replace("'", "").replace("‘", "").replace("’", "")
-
-#     return {
-#         'head_id': obj['tail_id'],
-#         'head': tail,
-#         'relation': inverse_relation,
-#         'tail_id': obj['head_id'],
-#         'tail': head
-#     }

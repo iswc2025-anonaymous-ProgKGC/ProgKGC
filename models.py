@@ -5,9 +5,7 @@ import torch
 import torch.nn as nn
 
 from dataclasses import dataclass
-import os
 
-os.environ['HF_ENDPOINT'] = 'https://hf-mirror.com'
 from transformers import AutoModel, AutoConfig
 from dict_hub import get_cotail_graph, get_dynamic_cache, get_cotail_graph_valid
 from triplet_mask import construct_mask
@@ -32,15 +30,15 @@ class GNNLayer(nn.Module):
         super().__init__()
         self.hidden_size = hidden_size
 
-        # 多头注意力层（PyTorch默认维度顺序：seq_len, batch, embed_dim）
+
         self.attention = nn.MultiheadAttention(
             embed_dim=hidden_size,
             num_heads=num_heads,
             dropout=dropout,
-            batch_first=False  # 确保输入为 (seq_len, batch, dim)
+            batch_first=False
         )
 
-        # 前馈层 + 归一化
+
         self.ffn = nn.Sequential(
             nn.Linear(hidden_size, 4 * hidden_size),
             nn.GELU(),
@@ -53,40 +51,32 @@ class GNNLayer(nn.Module):
         self._init_weights()
 
     def _init_weights(self):
-        """Xavier初始化所有线性层参数"""
+
         for layer in [self.attention, self.ffn]:
             if isinstance(layer, nn.Linear):
                 nn.init.xavier_uniform_(layer.weight)
                 nn.init.constant_(layer.bias, 0.0)
 
     def forward(self, query: torch.Tensor, neighbors: torch.Tensor) -> torch.Tensor:
-        """
-        Args:
-            query: [D] 当前实体的原始向量
-            neighbors: [K, D] 邻居实体向量（K=0时返回原始向量）
-        Returns:
-            融合后的实体向量 [D]
-        """
-        if neighbors.size(0) == 0:  # 空邻居直接返回原始向量
+
+        if neighbors.size(0) == 0:
             return query
 
-        # ================= 维度调整 =================
-        # query: [D] -> [1, 1, D] -> (seq_len=1, batch=1, dim)
-        # neighbors: [K, D] -> [K, 1, D] -> (seq_len=K, batch=1, dim)
+
         query_3d = query.view(1, 1, -1)
         neighbors_3d = neighbors.unsqueeze(1)  # [K, 1, D]
 
-        # ================= 多头注意力 =================
+
         attn_output, _ = self.attention(
             query=query_3d,  # [1, 1, D]
             key=neighbors_3d,  # [K, 1, D]
             value=neighbors_3d,  # [K, 1, D]
             need_weights=False
         )
-        # 残差连接 + 归一化
+
         query_3d = self.norm1(query_3d + self.dropout(attn_output))  # [1, 1, D]
 
-        # ================= 前馈层 =================
+
         ffn_output = self.ffn(query_3d)
         output = self.norm2(query_3d + self.dropout(ffn_output))  # [1, 1, D]
 
@@ -130,8 +120,8 @@ class CustomBertModel(nn.Module, ABC):
                 tail_token_ids, tail_mask, tail_token_type_ids,
                 head_token_ids, head_mask, head_token_type_ids,
                 use_gnn=True,
-                use_head_gnn=True,  # 新增参数：是否融合头实体
-                use_tail_gnn=False,  # 新增参数：是否融合尾实体
+                use_head_gnn=True,
+                use_tail_gnn=False,
                 only_ent_embedding=False, **kwargs) -> dict:
         if only_ent_embedding:
             return self.predict_ent_embedding(tail_token_ids=tail_token_ids,
@@ -153,7 +143,7 @@ class CustomBertModel(nn.Module, ABC):
                                    mask=head_mask,
                                    token_type_ids=head_token_type_ids)
 
-        # ========== GNN特征融合 ==========
+
 
         if not use_gnn:
             return {'hr_vector': hr_vector,
@@ -164,13 +154,13 @@ class CustomBertModel(nn.Module, ABC):
             cache = get_dynamic_cache()
             batch_data = kwargs.get('batch_data', [])
 
-            # 处理HR向量 - 只在use_head_gnn=True时执行
+
             if use_head_gnn:
                 updated_hr = []
                 for i, ex in enumerate(batch_data):
-                    # 获取当前头实体的共尾实体ID
+
                     cotail_heads = get_cotail_graph_valid().get_cotail_neighbors(ex.head_id)
-                    # 从缓存获取对应的HR向量
+
                     neighbor_vectors = [vec for vec in cache.get_hr_vectors(cotail_heads) if vec is not None]
                     if neighbor_vectors:
                         neighbor_tensor = torch.stack(neighbor_vectors).to(hr_vector.device)
@@ -180,13 +170,10 @@ class CustomBertModel(nn.Module, ABC):
                         updated_hr.append(hr_vector[i])
                 hr_vector = torch.stack(updated_hr)
 
-            # 处理Tail向量 - 只在use_tail_gnn=True时执行
             if use_tail_gnn:
                 updated_tail = []
                 for i, ex in enumerate(batch_data):
-                    # 获取当前尾实体的共尾实体ID
                     cotail_tails = get_cotail_graph_valid().get_cotail_neighbors(ex.tail_id)
-                    # 从缓存获取对应的Tail向量
                     neighbor_vectors = [vec for vec in cache.get_tail_vectors(cotail_tails) if vec is not None]
                     if neighbor_vectors:
                         neighbor_tensor = torch.stack(neighbor_vectors).to(tail_vector.device)
@@ -200,13 +187,10 @@ class CustomBertModel(nn.Module, ABC):
             cache = get_dynamic_cache()
             batch_data = kwargs.get('batch_data', [])
 
-            # 处理HR向量 - 只在use_head_gnn=True时执行
             if use_head_gnn:
                 updated_hr = []
                 for i, ex in enumerate(batch_data):
-                    # 获取当前头实体的共尾实体ID
                     cotail_heads = get_cotail_graph().get_cotail_neighbors(ex.head_id)
-                    # 从缓存获取对应的HR向量
                     neighbor_vectors = [vec for vec in cache.get_hr_vectors(cotail_heads) if vec is not None]
                     if neighbor_vectors:
                         neighbor_tensor = torch.stack(neighbor_vectors).to(hr_vector.device)
@@ -216,13 +200,10 @@ class CustomBertModel(nn.Module, ABC):
                         updated_hr.append(hr_vector[i])
                 hr_vector = torch.stack(updated_hr)
 
-            # 处理Tail向量 - 只在use_tail_gnn=True时执行
             if use_tail_gnn:
                 updated_tail = []
                 for i, ex in enumerate(batch_data):
-                    # 获取当前尾实体的共尾实体ID
                     cotail_tails = get_cotail_graph().get_cotail_neighbors(ex.tail_id)
-                    # 从缓存获取对应的Tail向量
                     neighbor_vectors = [vec for vec in cache.get_tail_vectors(cotail_tails) if vec is not None]
                     if neighbor_vectors:
                         neighbor_tensor = torch.stack(neighbor_vectors).to(tail_vector.device)
@@ -234,7 +215,6 @@ class CustomBertModel(nn.Module, ABC):
 
         hr_vector = F.normalize(hr_vector, p=2, dim=1)
         tail_vector = F.normalize(tail_vector, p=2, dim=1)
-        # ========== 融合结束 ==========
 
         # DataParallel only support tensor/dict
         return {'hr_vector': hr_vector,
@@ -265,29 +245,22 @@ class CustomBertModel(nn.Module, ABC):
             self_negative_mask = batch_dict['self_negative_mask']
             self_neg_logits.masked_fill_(~self_negative_mask, -1e4)
             logits = torch.cat([logits, self_neg_logits.unsqueeze(1)], dim=-1)
-        # =========================新增代码=========================
-        # 处理RS负样本
         if self.args.use_rs_negative and self.training:
             rs_neg_ids = batch_dict['rs_neg_token_ids']
             if rs_neg_ids.size(0) > 0:
-                # 编码RS负样本向量
                 rs_neg_vec = self._encode(
                     self.tail_bert,
                     rs_neg_ids,
                     batch_dict['rs_neg_mask'],
                     batch_dict['rs_neg_token_type_ids']
                 )
-                # 重塑为 (batch_size, K, hidden_size)
                 K = rs_neg_vec.size(0) // batch_size
                 rs_neg_vec = rs_neg_vec.view(batch_size, K, -1)
-                # 计算相似度 (batch_size, K)
                 rs_logits = torch.bmm(
                     hr_vector.unsqueeze(1),  # (B,1,D)
                     rs_neg_vec.transpose(1, 2)  # (B,D,K)
                 ).squeeze(1) * self.log_inv_t.exp()
-                # 合并到总logits
                 logits = torch.cat([logits, rs_logits], dim=-1)
-        # =========================新增代码=========================
 
         return {'logits': logits,
                 'labels': labels,

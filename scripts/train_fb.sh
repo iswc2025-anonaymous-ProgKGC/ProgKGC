@@ -15,7 +15,7 @@ if [ -z "$DATA_DIR" ]; then
   DATA_DIR="${DIR}/data/${TASK}"
 fi
 
-# 注意：所有参数行末尾的\后不可有空格或注释
+
 python3 -u main.py \
 --model-dir "${OUTPUT_DIR}" \
 --pretrained-model bert-base-uncased \
@@ -35,4 +35,4 @@ python3 -u main.py \
 --epochs 11 \
 --workers 4 \
 --max-to-keep 5 \
-"$@"  # 确保外部参数在最后
+"$@"

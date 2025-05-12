@@ -128,34 +128,32 @@ class Dataset(torch.utils.data.dataset.Dataset):
                     self.examples = load_data(path)
                 else:
                     self.examples.extend(load_data(path))
-        # =======================新增代码==========================
-        self.relation_tails = defaultdict(set)  # 预存每个关系对应的所有尾实体
-        self._build_relation_tails()
-        # =======================新增代码==========================
 
-    # =======================新增代码==========================
+        self.relation_tails = defaultdict(set)
+        self._build_relation_tails()
+
     def _build_relation_tails(self):
-        """构建关系r到所有尾实体t的映射"""
+
         for ex in self.examples:
             r = ex.relation
             t_id = ex.tail_id
             self.relation_tails[r].add(t_id)
 
-    # =======================新增代码==========================
+
 
     def __len__(self):
         return len(self.examples)
 
     def __getitem__(self, index):
-        # =======================新增代码==========================
+
         example = self.examples[index]
-        # 采样K个同一关系下的负样本尾实体
+
         K = self.args.rs_negative_K
         r = example.relation
         t_id = example.tail_id
         candidates = list(self.relation_tails[r] - {t_id})
         sampled_t_ids = random.sample(candidates, min(K, len(candidates))) if candidates else []
-        # 编码RS负样本的文本
+
         rs_negs = []
         for tid in sampled_t_ids:
             t_entity = entity_dict.get_entity_by_id(tid)
@@ -168,13 +166,9 @@ class Dataset(torch.utils.data.dataset.Dataset):
             })
         return {
             **example.vectorize(),
-            'rs_negs': rs_negs  # 每个样本携带K个RS负样本
+            'rs_negs': rs_negs
         }
-    # =======================新增代码==========================
 
-    # =======================原来代码==========================
-    #     return self.examples[index].vectorize()
-    # =======================原来代码==========================
 
 
 def load_data(path: str,
@@ -238,13 +232,13 @@ def collate(batch_data: List[dict]) -> dict:
         'self_negative_mask': construct_self_negative_mask(batch_exs) if not args.is_test else None,
     }
 
-    # =======================新增代码==========================
+
     rs_neg_inputs = [ex['rs_negs'] for ex in batch_data]
     all_rs_negs = []
     for sample_negs in rs_neg_inputs:
-        all_rs_negs.extend(sample_negs)  # 确保每个样本的K个负样本连续存放
+        all_rs_negs.extend(sample_negs)
 
-    # 转换为Tensor
+
     if len(all_rs_negs) > 0:
         rs_neg_ids, rs_neg_mask = to_indices_and_mask(
             [torch.LongTensor(n['input_ids']) for n in all_rs_negs],
@@ -262,7 +256,7 @@ def collate(batch_data: List[dict]) -> dict:
         'rs_neg_mask': rs_neg_mask,
         'rs_neg_token_type_ids': rs_neg_types,
     })
-    # =======================新增代码==========================
+
 
     return batch_dict
 

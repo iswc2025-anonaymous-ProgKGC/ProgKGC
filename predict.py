@@ -117,7 +117,7 @@ class BertPredictor:
             tail_ids = [ex.tail_id for ex in batch_data]
             hr_vectors = outputs['hr_vector']
             tail_vectors = outputs['tail_vector']
-            # 更新缓存
+
             cache = get_dynamic_cache()
             cache.update_hr(head_ids, hr_vectors)
             cache.update_tail(tail_ids, tail_vectors)

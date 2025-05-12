@@ -1,5 +1,5 @@
 python>=3.7
-torch>=1.6 (for mixed precision training)
+torch>=1.6
 transformers>=4.15
 torch>=1.10.0
 transformers>=4.20.0
