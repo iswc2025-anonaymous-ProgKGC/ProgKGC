@@ -11,8 +11,6 @@ The model incorporates a progressive training strategy and a bidirectional neigh
 
 - Progressive training: semantic encoder first, followed by structural encoder  
 - Bidirectional neighbor aggregation: integrates head and tail entity neighborhood information  
-- Built upon SimKGC, with additional GAT-based modules and a progressive training strategy
-
 ---
 
 ## 🛠 Installation
