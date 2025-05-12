@@ -1,0 +1,38 @@
+#!/usr/bin/env bash
+
+set -x
+set -e
+
+TASK="FB15k237"
+
+DIR="$( cd "$( dirname "$0" )" && cd .. && pwd )"
+echo "working directory: ${DIR}"
+
+if [ -z "$OUTPUT_DIR" ]; then
+  OUTPUT_DIR="${DIR}/checkpoint/${TASK}_$(date +%F-%H%M.%S)"
+fi
+if [ -z "$DATA_DIR" ]; then
+  DATA_DIR="${DIR}/data/${TASK}"
+fi
+
+# 注意：所有参数行末尾的\后不可有空格或注释
+python3 -u main.py \
+--model-dir "${OUTPUT_DIR}" \
+--pretrained-model bert-base-uncased \
+--pooling mean \
+--lr 1e-5 \
+--use-link-graph \
+--train-path "$DATA_DIR/train.txt.json" \
+--valid-path "$DATA_DIR/valid.txt.json" \
+--task ${TASK} \
+--batch-size 512 \
+--print-freq 20 \
+--additive-margin 0.02 \
+--use-amp \
+--use-self-negative \
+--finetune-t \
+--pre-batch 2 \
+--epochs 11 \
+--workers 4 \
+--max-to-keep 5 \
+"$@"  # 确保外部参数在最后
