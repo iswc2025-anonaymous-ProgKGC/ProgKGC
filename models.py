@@ -121,7 +121,7 @@ class CustomBertModel(nn.Module, ABC):
                 head_token_ids, head_mask, head_token_type_ids,
                 use_gnn=True,
                 use_head_gnn=True,
-                use_tail_gnn=False,
+                use_tail_gnn=True,
                 only_ent_embedding=False, **kwargs) -> dict:
         if only_ent_embedding:
             return self.predict_ent_embedding(tail_token_ids=tail_token_ids,
