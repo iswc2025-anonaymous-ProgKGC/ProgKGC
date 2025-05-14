@@ -1,9 +1,6 @@
 # ProgKGC: Progressive Structure-Enhanced Semantic Framework for Knowledge Graph Completion
 
-This repository contains the official implementation of **ProgKGC**, a progressive structure-enhanced semantic framework for knowledge graph completion.  
-The model incorporates a progressive training strategy and a bidirectional neighbor integration mechanism to better leverage both textual and structural information.
-
-> 🔍 This repository is part of a submission to a top-tier semantic web conference.
+> 🔍 This repository contains the official implementation of **ProgKGC**, a progressive structure-enhanced semantic framework for knowledge graph completion. The model incorporates a progressive training strategy and a bidirectional neighbor integration mechanism to better leverage both textual and structural information.
 
 ---
 
