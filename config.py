@@ -80,8 +80,8 @@ parser.add_argument('--eval-model-path', default='', type=str, metavar='N',
                     help='path to model, only used for evaluation')
 parser.add_argument('--use-gat-negative', action='store_true',
                     help='use GAT generated negative samples')
-parser.add_argument('--use-rs-negative', action='store_true', help='启用关系约束型负样本')
-parser.add_argument('--rs-negative-K', type=int, default=5, help='每个样本的RS负样本数')
+parser.add_argument('--use-rs-negative', action='store_true', help='Enable relation-constrained negative samples')
+parser.add_argument('--rs-negative-K', type=int, default=5, help='The number of RS negative samples per sample')
 
 
 args = parser.parse_args()
