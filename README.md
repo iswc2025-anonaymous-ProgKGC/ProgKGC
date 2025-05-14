@@ -33,7 +33,7 @@ It involves 3 steps: dataset preprocessing, model training, and model evaluation
 bash scripts/preprocess.sh WN18RR
 ```
 
-**Step 2**, train the model and (optionally) specify the output directory (takes less than 3 hours):
+**Step 2**, train the model and (optionally) specify the output directory:
 
 ```bash
 OUTPUT_DIR=./checkpoint/wn18rr/ bash scripts/train_wn.sh
@@ -57,7 +57,7 @@ Feel free to change the output directory to any path you think appropriate.
 bash scripts/preprocess.sh FB15k237
 ```
 
-**Step 2**, train the model and (optionally) specify the output directory (takes less than 3 hours):
+**Step 2**, train the model and (optionally) specify the output directory:
 
 ```bash
 OUTPUT_DIR=./checkpoint/fb15k237/ bash scripts/train_fb.sh
